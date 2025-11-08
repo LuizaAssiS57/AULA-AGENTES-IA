@@ -10,7 +10,7 @@ tema = st.text_input("Tema de estudo: ", placeholder="Ex.: Algoritmos")
 objetivo = st.text_input("Objetivo: ", placeholder="Ex.: Entender conceitos")
 
 executar = st.button("Gerar material")
-api_key = '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'
+api_key = 'API_KEY'
 
 if executar:
     # Características do LLM
