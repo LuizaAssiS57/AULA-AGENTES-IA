@@ -1,197 +1,159 @@
+# Feito por: Enzo Alcantara de Santana e Luiza de Assis Fernandes.
 import os
 import streamlit as st
 from crewai import Agent, Task, Crew, Process, LLM
 
 # ---------------------------
-# UI - Interface de Marketing
+# UI - Interface Streamlit
 # ---------------------------
-st.header("🚀 Gerador de Conteúdo de Marketing")
-st.write("Descreva seu produto e gere automaticamente textos para anúncios, posts e mais.")
+st.header("💻 MasterCode.IA ")
+st.write("Descreva um problema de programação e deixe a equipe de IAs resolvê-lo.")
 
-# Inputs focados em marketing
-produto = st.text_input("Nome do Produto/Serviço", placeholder="Ex.: Tênis de corrida 'Velocity'")
-publico_alvo = st.text_input("Público-alvo", placeholder="Ex.: Corredores iniciantes, 20-35 anos")
-beneficios = st.text_area("Principais Benefícios/Diferenciais", placeholder="Ex.: Leve, amortecimento responsivo, ótimo custo-benefício")
-tom_de_voz = st.selectbox(
-    "Tom de Voz da Marca",
-    ["Profissional", "Amigável", "Divertido", "Urgente", "Inspirador", "Técnico"],
-    index=1 # Padrão "Amigável"
-)
+# Inputs do usuário
+problema = st.text_area("Descreva o problema ou a função que você precisa:", 
+                        placeholder="Ex.: Preciso de uma função em Python que receba um texto e conte a frequência de cada palavra, retornando um dicionário.")
+linguagem = st.selectbox("Linguagem de Programação", 
+                         ["Python", "JavaScript", "C#", "Java", "Outra (especificar no problema)"])
 
 api_key = st.text_input("Sua API Key (Groq)", type="password", placeholder="gsk_...")
 
-executar = st.button("Gerar Conteúdo de Marketing")
+executar = st.button("Gerar Código")
 
 if executar:
-    if not api_key or not produto or not publico_alvo or not beneficios:
-        st.error("Por favor, preencha a API Key, Produto, Público-alvo e Benefícios.")
+    if not api_key or not problema:
+        st.error("Por favor, informe a API key e a descrição do problema.")
         st.stop()
 
     # ---------------------------
-    # LLM (Mantendo Groq / Llama 3)
+    # LLM (Groq / Llama 3)
     # ---------------------------
     llm = LLM(
         model="groq/llama-3.3-70b-versatile",
         api_key=api_key,
-        temperature=0.4 
+        temperature=0.2 # Baixa temperatura para código, queremos precisão
     )
 
     # ---------------------------
-    # Agentes da Equipe de Marketing
+    # Agentes da Equipe de Devs
     # ---------------------------
 
-    # Agente 1: Focado em Branding (Slogans e CTAs)
-    agente_branding = Agent(
-        role="Estrategista de Marca (Branding)",
+    # Agente 1: Arquiteto/Planejador
+    agente_arquiteto = Agent(
+        role="Arquiteto de Software",
         goal=(
-            "Criar 5 slogans curtos e 5 chamadas para ação (CTAs) impactantes para {produto}, "
-            "usando o tom de voz {tom_de_voz} e focado nos {beneficios}."
+            "Analisar o {problema} do usuário e criar um plano técnico claro e conciso. "
+            "Definir o nome da função, os parâmetros de entrada (com tipos) e o tipo de saída esperado. "
+            "O plano deve ser em bullets."
         ),
         backstory=(
-            "Você é um especialista em branding e consegue resumir o valor de "
-            "um produto em frases curtas e memoráveis que geram ação."
+            "Você é um arquiteto de software sênior que se destaca em quebrar problemas complexos "
+            "em requisitos técnicos simples e diretos para a equipe de desenvolvimento."
         ),
         llm=llm, verbose=False
     )
 
-    # Agente 2: Focado em Anúncios Pagos (PPC)
-    agente_copywriter = Agent(
-        role="Copywriter de Performance (PPC)",
+    # Agente 2: Desenvolvedor
+    agente_dev = Agent(
+        role=f"Desenvolvedor(a) Sênior em {linguagem}",
         goal=(
-            "Escrever textos persuasivos para anúncios (Google Ads e Facebook Ads) "
-            "para {produto}, mirando em {publico_alvo}."
+            "Escrever o código completo e funcional em {linguagem} com base no plano técnico do Arquiteto. "
+            "O código deve ser limpo, eficiente e bem comentado, explicando a lógica."
         ),
         backstory=(
-            "Você é mestre em criar anúncios de alta conversão que capturam "
-            "a atenção e convencem o {publico_alvo} a clicar, destacando os {beneficios}."
+            f"Você é um(a) programador(a) expert em {linguagem}, focado(a) em escrever "
+            "código de alta qualidade que resolve o problema proposto de forma robusta."
         ),
         llm=llm, verbose=False
     )
 
-    # Agente 3: Focado em Mídias Sociais
-    agente_social = Agent(
-        role="Gerente de Mídias Sociais (Social Media)",
+    # Agente 3: Engenheiro de QA (Testes)
+    agente_qa = Agent(
+        role="Engenheiro(a) de QA (Testes)",
         goal=(
-            "Gerar 3 ideias de posts criativos (Instagram/LinkedIn) para {produto}, "
-            "alinhados ao {tom_de_voz} e {publico_alvo}."
+            "Com base no código final, criar 3 casos de teste significativos para validar a função. "
+            "Incluir um teste 'caminho feliz' (válido), um teste de 'borda' (edge case) "
+            "e um teste 'inválido' (ex: input nulo ou formato errado)."
         ),
         backstory=(
-            "Você sabe como criar conteúdo que engaja, educa e entretém, "
-            "transformando seguidores em clientes."
-        ),
-        llm=llm, verbose=False
-    )
-
-    # Agente 4: Focado em Email Marketing
-    agente_email = Agent(
-        role="Especialista em Email Marketing",
-        goal=(
-            "Criar 5 linhas de assunto (subject lines) magnéticas e um (1) "
-            "curto e-mail de 'pitch' (apresentação) para {produto}."
-        ),
-        backstory=(
-            "Sua especialidade é criar e-mails que são abertos, lidos e que "
-            "geram cliques, usando o {tom_de_voz} correto para o {publico_alvo}."
+            "Você é um engenheiro de QA detalhista, mestre em encontrar bugs e garantir "
+            "que o código funcione perfeitamente em todos os cenários antes de ir para produção."
         ),
         llm=llm, verbose=False
     )
 
     # ---------------------------
-    # Tarefas de Marketing
+    # Tarefas da Equipe
     # ---------------------------
 
-    # Tarefa 1: Slogans e CTAs (Executa primeiro)
-    t_branding = Task(
+    # Tarefa 1: Planejamento
+    t_arquiteto = Task(
         description=(
-            "SLOGANS E CTAS\n"
-            "Gere 5 slogans curtos e 5 CTAs (Calls-to-Action) para o {produto}, "
-            "focando nos {beneficios} e no {publico_alvo}. "
-            "Use o tom de voz: {tom_de_voz}. "
-            "Formate em Markdown com títulos '## Slogans' e '## CTAs'."
+            "PLANO TÉCNICO\n"
+            "Analise este problema: {problema}. "
+            "Crie um plano técnico em Markdown. "
+            "Defina: 1. Nome da Função/Classe, 2. Parâmetros de Entrada (com tipos), 3. Saída Esperada (com tipo)."
         ),
-        agent=agente_branding,
-        expected_output="Duas listas em Markdown: 5 slogans e 5 CTAs."
+        agent=agente_arquiteto,
+        expected_output="Um plano técnico em Markdown com a assinatura da função e requisitos."
     )
 
-    # Tarefa 2: Anúncios (Usa o contexto de branding)
-    t_anuncios = Task(
+    # Tarefa 2: Codificação
+    t_dev = Task(
         description=(
-            "ANÚNCIOS (PPC)\n"
-            "Crie 2 variações de anúncios para Google Ads (2 Títulos, 1 Descrição curta) "
-            "e 1 variação para Facebook/Instagram (1 Texto principal, 1 Título). "
-            "Use os slogans e CTAs do contexto para se inspirar. "
-            "Foque nos {beneficios} para o {publico_alvo}."
+            "CÓDIGO FONTE\n"
+            "Usando o plano técnico do Arquiteto, escreva o código completo em {linguagem}. "
+            "Formate o código final dentro de um bloco de markdown (ex: ```{linguagem} ... ```). "
+            "Inclua comentários explicando partes complexas."
         ),
-        agent=agente_copywriter,
-        expected_output="Texto formatado em Markdown com as 3 variações de anúncios.",
-        context=[t_branding] # Depende dos slogans
+        agent=agente_dev,
+        expected_output=f"Um único bloco de código Markdown (```{linguagem} ... ```) com a solução completa.",
+        context=[t_arquiteto] # Esta tarefa DEPENDE da t_arquiteto
     )
 
-    # Tarefa 3: Posts Sociais
-    t_posts = Task(
+    # Tarefa 3: Testes
+    t_qa = Task(
         description=(
-            "IDEIAS DE POSTS (MÍDIAS SOCIAIS)\n"
-            "Liste 3 ideias de posts para {produto}. "
-            "Para cada ideia, inclua: **Gancho (Hook)** (1 frase), **Descrição** (2-3 frases), **Hashtags** (3-5)."
+            "CASOS DE TESTE\n"
+            "Revise o código gerado pelo Desenvolvedor. Crie 3 casos de teste em Markdown. "
+            "Para cada teste (Válido, Borda, Inválido), liste: **Entrada** e **Saída Esperada**."
         ),
-        agent=agente_social,
-        expected_output="Lista numerada (1-3) em Markdown com as ideias de posts."
-    )
-
-    # Tarefa 4: Conteúdo de Email
-    t_email = Task(
-        description=(
-            "CONTEÚDO DE EMAIL\n"
-            "1. Crie uma lista de 5 linhas de assunto (subjects) curtas e persuasivas. "
-            "2. Escreva um (1) parágrafo curto (máx. 60 palavras) para um email de "
-            "apresentação do {produto}. "
-            "Formate em Markdown."
-        ),
-        agent=agente_email,
-        expected_output="Markdown com a lista de subjects e o parágrafo do email."
+        agent=agente_qa,
+        expected_output="Uma lista numerada em Markdown com os 3 casos de teste.",
+        context=[t_dev] # Esta tarefa DEPENDE da t_dev
     )
 
     # ---------------------------
     # Orquestração (Crew)
     # ---------------------------
-    # Definindo a equipe e a ordem das tarefas
-    agents = [agente_branding, agente_copywriter, agente_social, agente_email]
-    tasks = [t_branding, t_anuncios, t_posts, t_email]
-
     crew = Crew(
-        agents=agents,
-        tasks=tasks,
-        process=Process.sequential, # Tarefas executam em ordem
+        agents=[agente_arquiteto, agente_dev, agente_qa],
+        tasks=[t_arquiteto, t_dev, t_qa],
+        process=Process.sequential, # Garante que as tarefas rodem em ordem (Arquiteto -> Dev -> QA)
     )
 
-    with st.spinner("Gerando conteúdo de marketing... 🚀"):
+    with st.spinner("A equipe de IAs está trabalhando... 🤖 📐 💻 🧪"):
         crew.kickoff(inputs={
-            "produto": produto,
-            "publico_alvo": publico_alvo,
-            "beneficios": beneficios,
-            "tom_de_voz": tom_de_voz,
+            "problema": problema,
+            "linguagem": linguagem
         })
 
     # ---------------------------
-    # Exibição dos Resultados (em Abas)
+    # Exibição dos Resultados
     # ---------------------------
     
-    # Lógica de extração de resultados (mantida igual à sua)
-    branding_out = getattr(t_branding, "output", None) or getattr(t_branding, "result", "") or ""
-    anuncios_out = getattr(t_anuncios, "output", None) or getattr(t_anuncios, "result", "") or ""
-    posts_out = getattr(t_posts, "output", None) or getattr(t_posts, "result", "") or ""
-    email_out = getattr(t_email, "output", None) or getattr(t_email, "result", "") or ""
+    # Extrai o resultado de cada tarefa
+    plano_out = getattr(t_arquiteto, "output", None) or getattr(t_arquiteto, "result", "") or ""
+    codigo_out = getattr(t_dev, "output", None) or getattr(t_dev, "result", "") or ""
+    testes_out = getattr(t_qa, "output", None) or getattr(t_qa, "result", "") or ""
 
-    # Abas para cada tipo de conteúdo
-    aba_branding, aba_anuncios, aba_posts, aba_email = st.tabs(
-        ["Slogans & CTAs", "Anúncios (PPC)", "Posts Sociais", "Email"]
+    # Abas para cada etapa do processo
+    aba_codigo, aba_plano, aba_testes = st.tabs(
+        ["✅ Código Final", "📐 Plano do Arquiteto", "🧪 Casos de Teste"]
     )
 
-    with aba_branding:
-        st.markdown(branding_out)
-    with aba_anuncios:
-        st.markdown(anuncios_out)
-    with aba_posts:
-        st.markdown(posts_out)
-    with aba_email:
-        st.markdown(email_out)
+    with aba_codigo:
+        st.markdown(codigo_out)
+    with aba_plano:
+        st.markdown(plano_out)
+    with aba_testes:
+        st.markdown(testes_out)
